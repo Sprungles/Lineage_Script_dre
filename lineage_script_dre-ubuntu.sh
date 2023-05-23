@@ -100,15 +100,18 @@ repo sync -c --no-tags --no-clone-bundle --optimized-fetch --prune -j"$(nproc --
 
 # Clone the device-specific repository
 echo "Cloning the device-specific repository..."
-git clone --depth=1 https://github.com/tangalbert919/android_device_oneplus_dre.git -b lineage-20 device/oneplus/dre
+git clone --depth=1 https://github.com/LineageOS/android_device_oneplus_dre.git -b lineage-20 device/oneplus/dre
 
 # Clone TheMuppets' proprietary vendor repository
 echo "Cloning TheMuppets' proprietary vendor repository..."
 git clone --depth=1 https://github.com/TheMuppets/proprietary_vendor_oneplus.git -b lineage-20 vendor/oneplus
 
+# Clone the hardware-specific repository
+echo "Cloning the hardware-specific repository"
+git clone --depth=1 https://github.com/LineageOS/android_hardware_oplus.git -b lineage-20 hardware/oplus
 # Clone the kernel lineage tree
 echo "Cloning the kernel lineage tree..."
-git clone --depth=1 https://github.com/tangalbert919/android_kernel_oneplus_sm8150.git -b lineage-20 kernel/oneplus/sm8150
+git clone --depth=1 https://github.com/tangalbert919/android_kernel_oneplus_sm4350.git -b lineage-20 kernel/oneplus/sm8150
 
 # Enable ccache for faster subsequent builds
 echo "Enabling ccache..."
