@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Check if running on Fedora
-if ! grep -iq "fedora" /etc/os-release; then
-    echo -e "\n\e[1;31mERROR: This script is designed to run on Fedora. Please use the appropriate script for your distribution.\e[0m\n"
+# Check if running on Arch Linux
+if ! grep -iq "arch" /etc/os-release; then
+    echo -e "\n\e[1;31mERROR: This script is designed to run on Arch Linux. Please use the appropriate script for your distribution.\e[0m\n"
     exit 1
 fi
 
-# Display warning for non-Fedora users
-echo -e "\n\e[1;33mYOU NEED TO BE ON FEDORA FOR THIS SCRIPT TO WORK. IF YOU WANT TO USE UBUNTU OR ARCH, USE THE OTHER SCRIPTS IN THE REPOSITORY YOU GOT THIS FROM\e[0m\n"
+# Display warning for non-Arch Linux users
+echo -e "\n\e[1;33mYOU NEED TO BE ON ARCH LINUX FOR THIS SCRIPT TO WORK. IF YOU WANT TO USE UBUNTU OR FEDORA, USE THE OTHER SCRIPTS IN THE REPOSITORY YOU GOT THIS FROM\e[0m\n"
 
 # Delay for user to read the warning
 sleep 5
@@ -19,8 +19,8 @@ read -p "Do you want to optimize network configuration for faster downloads and 
 if [[ $network_optimization =~ ^[Yy]$ ]]; then
     echo "Optimizing network configuration..."
 
-    # Enable parallel downloading in dnf configuration
-    sudo sed -i '/fastestmirror/s/^/#/' /etc/dnf/dnf.conf
+    # Enable parallel downloading in Pacman configuration
+    echo 'ParallelDownloads = 5' | sudo tee -a /etc/pacman.conf
 fi
 
 # Remove old LineageOS source code and .repo folders
@@ -28,20 +28,23 @@ echo "Removing old LineageOS source code..."
 rm -rf ~/android/lineage
 rm -rf ~/.repo
 
-# Initialize repo tool
-echo "Initializing repo tool..."
-cd ~
-mkdir -p ~/bin
-curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-chmod a+x ~/bin/repo
-
 # Update the system
 echo "Updating the system..."
-sudo dnf update -y
+sudo pacman -Syu --noconfirm
 
 # Install necessary packages
 echo "Installing necessary packages..."
-sudo dnf install -y java-11-openjdk-devel git gnupg flex bison gperf gcc-c++ zip zlib-devel ncurses-compat-libs readline-devel openssl-devel perl-Digest-SHA libxml2-utils xsltproc unzip python3 python3-pip python3-setuptools which
+sudo pacman -S --needed --noconfirm base-devel git gnupg jdk8-openjdk \
+    zip curl zlib lib32-zlib readline ncurses mesa xorgproto \
+    xorg-server-devel libxml2 python-markdown python2 python2-pip android-tools
+
+# Install yay AUR helper
+echo "Installing yay AUR helper..."
+git clone https://aur.archlinux.org/yay.git
+cd yay
+makepkg -si --noconfirm
+cd ..
+rm -rf yay
 
 # Clone the LineageOS source repository
 echo "Cloning the LineageOS source repository..."
@@ -52,7 +55,7 @@ repo sync -c --no-tags --no-clone-bundle --optimized-fetch --prune -j$(nproc --a
 
 # Clone the device-specific repository
 echo "Cloning the device-specific repository..."
-git clone --depth=1 https://github.com/tangalbert919/android_device_oneplus_dre.git -b lineage-20.0 device/oneplus/dre
+git clone --depth=1 https://github.com/LineageOS/android_device_oneplus_dre.git -b lineage-20.0 device/oneplus/dre
 
 # Clone TheMuppets' proprietary vendor repository
 echo "Cloning TheMuppets' proprietary vendor repository..."
@@ -68,13 +71,16 @@ ccache -M 50G
 
 # Set up environment variables
 export LC_ALL=C
-export ANDROID_JACK_VM_ARGS="-Dfile.encoding=UTF-8 -XX:+TieredCompilation -Xmx8G"
+export JACK_SERVER_VM_ARGUMENTS="-Dfile.encoding=UTF-8 -XX:+TieredCompilation -Xmx8G"
+
+# Source build environment
+echo "Sourcing build environment..."
+source build/envsetup.sh
 
 # Build LineageOS
 echo "Building LineageOS..."
-source build/envsetup.sh
 lunch lineage_dre-userdebug
-make bacon -j$(nproc --all)
+mka bacon -j$(nproc --all)
 
 # Build completed!
 echo -e "\n\e[1;35mBuild completed!\e[0m\n"
@@ -92,7 +98,7 @@ if [[ $install_microg =~ ^[Yy]$ ]]; then
 
     # Build Revanced MicroG
     echo "Building Revanced MicroG..."
-    make VancedMicroG -j$(nproc --all)
+    mka VancedMicroG -j$(nproc --all)
 
     # Install Revanced MicroG
     echo "Installing Revanced MicroG..."
@@ -111,12 +117,9 @@ if [[ $revert_changes =~ ^[Yy]$ ]]; then
     if [[ $network_optimization =~ ^[Yy]$ ]]; then
         echo "Reverting network configuration optimization..."
 
-        # Disable parallel downloading in dnf configuration
-        sudo sed -i '/fastestmirror/s/^#//' /etc/dnf/dnf.conf
+        # Remove parallel downloading configuration from Pacman
+        sudo sed -i '/^ParallelDownloads =/d' /etc/pacman.conf
     fi
-
-    echo "Removing DNS configuration..."
-    sudo sed -i '/nameserver/d' /etc/resolv.conf
 
     echo "Removing LineageOS source..."
     rm -rf ~/android/lineage
