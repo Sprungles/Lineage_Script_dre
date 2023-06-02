@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Check if running on Fedora
-if ! grep -iq "fedora" /etc/os-release; then
-    echo -e "\n\e[1;31mERROR: This script is designed to run on Fedora. Please use the appropriate script for your distribution.\e[0m\n"
+# Check if running on Ubuntu
+if ! grep -iq "ubuntu" /etc/os-release; then
+    echo -e "\n\e[1;31mERROR: This script is designed to run on Ubuntu. Please use the appropriate script for your distribution.\e[0m\n"
     exit 1
 fi
 
-# Display warning for non-Fedora users
-echo -e "\n\e[1;33mYOU NEED TO BE ON FEDORA FOR THIS SCRIPT TO WORK. IF YOU WANT TO USE UBUNTU OR ARCH, USE THE OTHER SCRIPTS IN THE REPOSITORY YOU GOT THIS FROM\e[0m\n"
+# Display warning for non-Ubuntu users
+echo -e "\n\e[1;33mYOU NEED TO BE ON UBUNTU FOR THIS SCRIPT TO WORK. IF YOU WANT TO USE FEDORA OR ARCH, USE THE OTHER SCRIPTS IN THE REPOSITORY YOU GOT THIS FROM\e[0m\n"
 
 # Delay for user to read the warning
 sleep 5
@@ -19,8 +19,8 @@ read -p "Do you want to optimize network configuration for faster downloads and 
 if [[ $network_optimization =~ ^[Yy]$ ]]; then
     echo "Optimizing network configuration..."
 
-    # Enable parallel downloading in dnf configuration
-    sudo sed -i '/fastestmirror/s/^/#/' /etc/dnf/dnf.conf
+    # Enable parallel downloading in apt configuration
+    sudo sed -i '/Acquire::http::Pipeline-Depth/s/^#//' /etc/apt/apt.conf.d/99parallel
 fi
 
 # Remove old LineageOS source code and .repo folders
@@ -37,11 +37,12 @@ chmod a+x ~/bin/repo
 
 # Update the system
 echo "Updating the system..."
-sudo dnf update -y
+sudo apt update
+sudo apt upgrade -y
 
 # Install necessary packages
 echo "Installing necessary packages..."
-sudo dnf install -y java-11-openjdk-devel git gnupg flex bison gperf gcc-c++ zip zlib-devel ncurses-compat-libs readline-devel openssl-devel perl-Digest-SHA libxml2-utils xsltproc unzip python3 python3-pip python3-setuptools which
+sudo apt install -y openjdk-11-jdk git gnupg flex bison gperf g++ zip zlib1g-dev libncurses5-dev pkg-config libssl-dev libxml2-utils xsltproc unzip python3 python3-pip python3-setuptools wget
 
 # Clone the LineageOS source repository
 echo "Cloning the LineageOS source repository..."
@@ -111,8 +112,8 @@ if [[ $revert_changes =~ ^[Yy]$ ]]; then
     if [[ $network_optimization =~ ^[Yy]$ ]]; then
         echo "Reverting network configuration optimization..."
 
-        # Disable parallel downloading in dnf configuration
-        sudo sed -i '/fastestmirror/s/^#//' /etc/dnf/dnf.conf
+        # Disable parallel downloading in apt configuration
+        sudo sed -i '/Acquire::http::Pipeline-Depth/s/^/#/' /etc/apt/apt.conf.d/99parallel
     fi
 
     echo "Removing DNS configuration..."
